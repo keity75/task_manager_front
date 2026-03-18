@@ -1,0 +1,22 @@
+# 依存関係
+node_modules
+
+# Next.js / Vercel
+.next
+.vercel
+out
+
+# ビルド・テスト・ログ
+build
+dist
+coverage
+*.log
+
+# 秘密ファイル・ローカル設定
+# (.env や .env.development はフォーマット対象に残す)
+.env*.local
+
+# ロックファイル
+package-lock.json
+pnpm-lock.yaml
+yarn.lock

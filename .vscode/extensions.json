@@ -1,0 +1,6 @@
+{
+  "recommendations": [
+    // Dev Containers（最重要）
+    "ms-vscode-remote.remote-containers"
+  ]
+}

@@ -1,0 +1,23 @@
+services:
+  nextjs-app:
+    build:
+      context: .
+    ports:
+      - '3000:3000'
+    volumes:
+      # ソースコード全体をマウント（ホットリロード用）
+      - .:/app
+      - /app/node_modules
+    environment:
+      - DOCKER_ENV=true  # Docker環境であることを示すフラグ
+      - NEXT_PUBLIC_API_BASE_URL=http://host.docker.internal:8000  # Dockerコンテナからホストマシンへ接続
+    command: npm run dev
+    user: 'node'
+    networks:
+      - app-network
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+networks:
+  app-network:
+    driver: bridge
