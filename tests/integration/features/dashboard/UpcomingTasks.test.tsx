@@ -6,6 +6,12 @@
  * 表示内容とカレンダーボタンの操作・disabled 状態の検証が中心。
  */
 
+// CreateTaskDialog は独自のミューテーション（next-auth 経由のServer Action）を持つため、
+// このテストの関心事（表示・カレンダー操作）から切り離してスタブ化する
+jest.mock('@/app/(workspace)/tasks/_components/CreateTaskDialog', () => ({
+  CreateTaskDialog: () => <div data-testid='create-task-dialog-mock' />,
+}));
+
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
@@ -132,6 +138,17 @@ describe('UpcomingTasks', () => {
 
       // Act & Assert
       expect(screen.getByRole('button', { name: 'Googleカレンダーで開く' })).toBeDisabled();
+    });
+
+    it('ヘッダー右端にタスク作成モーダルの導線が表示される', () => {
+      // Arrange
+      const props = createDefaultProps();
+
+      // Act
+      renderWithProviders(<UpcomingTasks {...props} />);
+
+      // Assert
+      expect(screen.getByTestId('create-task-dialog-mock')).toBeInTheDocument();
     });
   });
 

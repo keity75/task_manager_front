@@ -5,9 +5,10 @@
  * Server Action 呼び出しと、UIで扱いやすい取得結果の整形を担う。
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { getTasks, getTaskSummary } from '../actions';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getTasks, getTaskSummary, createTask } from '../actions';
 import { SortKey, SortOrder, GetTasksResponse, TaskSummaryResponse } from '../types';
+import { TaskFormInput } from '@/lib/schema/task.schema';
 
 /**
  * タスク一覧を取得するカスタムフック
@@ -71,4 +72,20 @@ export const useTaskSummaryQuery = () => {
     isError: !!error,
     error,
   };
+};
+
+/**
+ * タスク作成用カスタムフック
+ * 成功時にタスク一覧・タスク統計のキャッシュを無効化し、即時反映する
+ */
+export const useCreateTaskMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: TaskFormInput) => createTask(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['taskSummary'] });
+    },
+  });
 };

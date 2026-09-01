@@ -11,6 +11,11 @@
 jest.mock('@/app/(workspace)/tasks/_hooks/useTasks', () => ({
   useTasksQuery: jest.fn(),
 }));
+// CreateTaskDialog は独自のミューテーション（next-auth 経由のServer Action）を持つため、
+// このテストの関心事（一覧のオーケストレーション）から切り離してスタブ化する
+jest.mock('@/app/(workspace)/tasks/_components/CreateTaskDialog', () => ({
+  CreateTaskDialog: () => <div data-testid='create-task-dialog-mock' />,
+}));
 
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -214,6 +219,16 @@ describe('TasksPageClient', () => {
 
       // Assert
       expect(screen.getByRole('button', { name: 'カレンダーを表示' })).toBeDisabled();
+    });
+
+    it('タスク一覧ヘッダーにタスク作成モーダルの導線が表示される', () => {
+      // Arrange: setupDefaultMocks
+
+      // Act
+      renderWithProviders(<TasksPageClient />);
+
+      // Assert
+      expect(screen.getByTestId('create-task-dialog-mock')).toBeInTheDocument();
     });
   });
 

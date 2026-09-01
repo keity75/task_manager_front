@@ -1,5 +1,6 @@
 import { CheckCircle2, Calendar } from 'lucide-react';
 import { Badge, Button } from '@/components/atoms';
+import { CreateTaskDialog } from '../../tasks/_components/CreateTaskDialog';
 import { Task } from '../../tasks/types';
 import { formatUtcToJst } from '@/lib/domains/date';
 import {
@@ -19,10 +20,13 @@ export function UpcomingTasks({ tasks, onCalendarClick }: UpcomingTasksProps) {
   return (
     <div className='rounded-lg border border-border bg-card shadow-sm overflow-hidden'>
       <div className='border-b border-border px-4 sm:px-6 py-4'>
-        <h2 className='flex items-center gap-2 text-base sm:text-lg font-semibold text-foreground'>
-          <CheckCircle2 className='h-5 w-5' />
-          {t.task.ui.page_title}
-        </h2>
+        <div className='flex items-center justify-between gap-2'>
+          <h2 className='flex items-center gap-2 text-base sm:text-lg font-semibold text-foreground'>
+            <CheckCircle2 className='h-5 w-5' />
+            {t.task.ui.page_title}
+          </h2>
+          <CreateTaskDialog />
+        </div>
       </div>
 
       <div className='divide-y divide-border'>

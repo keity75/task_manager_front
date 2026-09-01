@@ -26,6 +26,7 @@ import {
 import { t } from '@/lib/locales/i18n';
 import { TaskFilter } from './TaskFilter';
 import { SortHeader } from './SortHeader';
+import { CreateTaskDialog } from './CreateTaskDialog';
 import { Pagination } from '@/components/molecules/Pagination';
 
 interface TaskListProps {
@@ -57,11 +58,14 @@ export function TaskList({
     <div className='rounded-lg border border-border bg-card shadow-sm overflow-hidden'>
       {/* ヘッダー */}
       <div className='border-b border-border px-4 sm:px-6 py-4'>
-        <div className='flex items-center gap-2'>
-          <CheckSquare className='h-5 w-5 text-muted-foreground' />
-          <span className='font-semibold text-foreground text-sm sm:text-base'>
-            {t.task.ui.list_title} ({totalCount})
-          </span>
+        <div className='flex items-center justify-between gap-2'>
+          <div className='flex items-center gap-2'>
+            <CheckSquare className='h-5 w-5 text-muted-foreground' />
+            <span className='font-semibold text-foreground text-sm sm:text-base'>
+              {t.task.ui.list_title} ({totalCount})
+            </span>
+          </div>
+          <CreateTaskDialog />
         </div>
       </div>
 

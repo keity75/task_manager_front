@@ -16,9 +16,29 @@
 
 import { authApi } from '@/lib/api/server';
 import { API_ENDPOINTS } from '@/lib/constants/api';
+import { convertToIsoWithTimezone } from '@/lib/domains/date';
+import { TaskFormInput } from '@/lib/schema/task.schema';
+import { TaskIdResponse } from '@/lib/types/api';
 import { Task, SortKey, SortOrder, GetTasksResponse, TaskSummaryResponse } from './types';
 
 // --- CRUD操作 ---
+
+// Create
+export async function createTask(input: TaskFormInput): Promise<TaskIdResponse> {
+  const response = await authApi.post<TaskIdResponse>(API_ENDPOINTS.TASKS.BASE, {
+    title: input.title,
+    description: input.description ?? null,
+    dueAt: convertToIsoWithTimezone(input.dueAt),
+    priority: input.priority,
+    status: input.status,
+  });
+
+  if (response.status !== 'success') {
+    throw new Error('API returned error status');
+  }
+
+  return response.data;
+}
 
 // Read
 export async function getTasks(options: {
