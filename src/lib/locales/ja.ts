@@ -32,6 +32,8 @@ export const ja = {
       load_more: 'さらに読み込む',
       clear: 'クリア',
       search: '検索',
+      refresh: '更新',
+      refreshing: '更新中...',
     },
     placeholder: {
       select: '選択...',
@@ -195,6 +197,7 @@ export const ja = {
       recent_list_title: '最新メール一覧',
       detail_title: 'メール詳細',
       detail_description: 'メールの内容を確認し、返信文案を生成できます。',
+      detail_view_description: 'メールの内容を確認できます。',
       body_unavailable: '（本文は現在読み込めません）',
       reply_generation_title: '返信文案生成',
       reply_generation_button: '返信文案生成',

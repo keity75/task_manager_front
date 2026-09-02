@@ -8,6 +8,7 @@ export const ROUTES = {
   LOGIN: '/login',
   DASHBOARD: '/dashboard',
   TASKS: '/tasks',
+  EMAILS: '/emails',
 } as const;
 
 /**

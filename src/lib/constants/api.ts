@@ -13,6 +13,10 @@ export const API_ENDPOINTS = {
     SUMMARY: `${API_PREFIX}/tasks/summary`,
     DETAIL: (id: string) => `${API_PREFIX}/tasks/${id}`,
   },
+  EMAILS: {
+    BASE: `${API_PREFIX}/emails`,
+    DETAIL: (id: string) => `${API_PREFIX}/emails/${id}`,
+  },
   AUTH: {
     SYNC: `${API_PREFIX}/auth/sync`,
     TOKEN_REFRESH: `${API_PREFIX}/auth/token/refresh`,

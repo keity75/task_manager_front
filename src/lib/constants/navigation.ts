@@ -9,6 +9,7 @@ import { ROUTES, type ExtractPath } from './routes';
  */
 export const NAV_IDS = {
   DASHBOARD: ROUTES.DASHBOARD.slice(1) as ExtractPath<typeof ROUTES.DASHBOARD>,
+  EMAILS: ROUTES.EMAILS.slice(1) as ExtractPath<typeof ROUTES.EMAILS>,
   TASKS: ROUTES.TASKS.slice(1) as ExtractPath<typeof ROUTES.TASKS>,
 } as const;
 
@@ -28,6 +29,11 @@ export const NAV_ITEMS: readonly NavItem[] = [
     id: NAV_IDS.DASHBOARD,
     label: t.navigation.dashboard,
     href: ROUTES.DASHBOARD,
+  },
+  {
+    id: NAV_IDS.EMAILS,
+    label: t.navigation.emails,
+    href: ROUTES.EMAILS,
   },
   {
     id: NAV_IDS.TASKS,

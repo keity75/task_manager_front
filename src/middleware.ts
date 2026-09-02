@@ -92,7 +92,8 @@ const authMiddleware = withAuth(
  * - `/login` ルート
  * - `/dashboard` 配下のすべてのルート
  * - `/tasks` 配下のすべてのルート
+ * - `/emails` 配下のすべてのルート
  */
 export const config = {
-  matcher: ['/login', '/dashboard/:path*', '/tasks/:path*'],
+  matcher: ['/login', '/dashboard/:path*', '/tasks/:path*', '/emails/:path*'],
 };
