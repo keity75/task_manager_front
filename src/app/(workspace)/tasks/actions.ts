@@ -40,6 +40,34 @@ export async function createTask(input: TaskFormInput): Promise<TaskIdResponse> 
   return response.data;
 }
 
+// Update
+export async function updateTask(id: string, input: TaskFormInput): Promise<TaskIdResponse> {
+  const response = await authApi.patch<TaskIdResponse>(API_ENDPOINTS.TASKS.DETAIL(id), {
+    title: input.title,
+    description: input.description ?? null,
+    dueAt: convertToIsoWithTimezone(input.dueAt),
+    priority: input.priority,
+    status: input.status,
+  });
+
+  if (response.status !== 'success') {
+    throw new Error('API returned error status');
+  }
+
+  return response.data;
+}
+
+// Delete
+export async function deleteTask(id: string): Promise<TaskIdResponse> {
+  const response = await authApi.delete<TaskIdResponse>(API_ENDPOINTS.TASKS.DETAIL(id));
+
+  if (response.status !== 'success') {
+    throw new Error('API returned error status');
+  }
+
+  return response.data;
+}
+
 // Read
 export async function getTasks(options: {
   page: number;

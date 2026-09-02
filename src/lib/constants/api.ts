@@ -11,6 +11,7 @@ export const API_ENDPOINTS = {
   TASKS: {
     BASE: `${API_PREFIX}/tasks`,
     SUMMARY: `${API_PREFIX}/tasks/summary`,
+    DETAIL: (id: string) => `${API_PREFIX}/tasks/${id}`,
   },
   AUTH: {
     SYNC: `${API_PREFIX}/auth/sync`,

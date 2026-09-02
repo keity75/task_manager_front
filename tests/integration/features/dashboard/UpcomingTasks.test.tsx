@@ -6,10 +6,20 @@
  * 表示内容とカレンダーボタンの操作・disabled 状態の検証が中心。
  */
 
-// CreateTaskDialog は独自のミューテーション（next-auth 経由のServer Action）を持つため、
-// このテストの関心事（表示・カレンダー操作）から切り離してスタブ化する
+// CreateTaskDialog/EditTaskDialog/DeleteTaskDialog は独自のミューテーション（next-auth 経由の
+// Server Action）を持つため、このテストの関心事（表示・カレンダー操作）から切り離してスタブ化する
 jest.mock('@/app/(workspace)/tasks/_components/CreateTaskDialog', () => ({
   CreateTaskDialog: () => <div data-testid='create-task-dialog-mock' />,
+}));
+// 選択中タスクがEditTaskDialog/DeleteTaskDialogに正しく渡っているかを検証できるよう、
+// taskプロパティをタイトルとして描画するスタブにする（task=nullのときは何も描画しない）
+jest.mock('@/app/(workspace)/tasks/_components/EditTaskDialog', () => ({
+  EditTaskDialog: ({ task }: { task: { title: string } | null }) =>
+    task ? <div data-testid='edit-task-dialog-mock'>{task.title}</div> : null,
+}));
+jest.mock('@/app/(workspace)/tasks/_components/DeleteTaskDialog', () => ({
+  DeleteTaskDialog: ({ task }: { task: { title: string } | null }) =>
+    task ? <div data-testid='delete-task-dialog-mock'>{task.title}</div> : null,
 }));
 
 import { screen } from '@testing-library/react';
@@ -138,6 +148,32 @@ describe('UpcomingTasks', () => {
 
       // Act & Assert
       expect(screen.getByRole('button', { name: 'Googleカレンダーで開く' })).toBeDisabled();
+    });
+
+    it('編集アイコンクリックで編集モーダルにそのタスクが渡される', async () => {
+      // Arrange
+      const user = userEvent.setup();
+      const task = buildMockTask({ id: 'task-1', title: '編集対象タスク' });
+      renderWithProviders(<UpcomingTasks {...createDefaultProps({ tasks: [task] })} />);
+
+      // Act
+      await user.click(screen.getByRole('button', { name: 'タスクを編集' }));
+
+      // Assert
+      expect(screen.getByTestId('edit-task-dialog-mock')).toHaveTextContent('編集対象タスク');
+    });
+
+    it('削除アイコンクリックで削除モーダルにそのタスクが渡される', async () => {
+      // Arrange
+      const user = userEvent.setup();
+      const task = buildMockTask({ id: 'task-1', title: '削除対象タスク' });
+      renderWithProviders(<UpcomingTasks {...createDefaultProps({ tasks: [task] })} />);
+
+      // Act
+      await user.click(screen.getByRole('button', { name: 'タスクを削除' }));
+
+      // Assert
+      expect(screen.getByTestId('delete-task-dialog-mock')).toHaveTextContent('削除対象タスク');
     });
 
     it('ヘッダー右端にタスク作成モーダルの導線が表示される', () => {

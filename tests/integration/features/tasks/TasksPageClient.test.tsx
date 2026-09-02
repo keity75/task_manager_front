@@ -11,10 +11,20 @@
 jest.mock('@/app/(workspace)/tasks/_hooks/useTasks', () => ({
   useTasksQuery: jest.fn(),
 }));
-// CreateTaskDialog は独自のミューテーション（next-auth 経由のServer Action）を持つため、
-// このテストの関心事（一覧のオーケストレーション）から切り離してスタブ化する
+// CreateTaskDialog/EditTaskDialog/DeleteTaskDialog は独自のミューテーション（next-auth 経由の
+// Server Action）を持つため、このテストの関心事（一覧のオーケストレーション）から切り離してスタブ化する
 jest.mock('@/app/(workspace)/tasks/_components/CreateTaskDialog', () => ({
   CreateTaskDialog: () => <div data-testid='create-task-dialog-mock' />,
+}));
+// 選択中タスクがEditTaskDialog/DeleteTaskDialogに正しく渡っているかを検証できるよう、
+// taskプロパティをタイトルとして描画するスタブにする（task=nullのときは何も描画しない）
+jest.mock('@/app/(workspace)/tasks/_components/EditTaskDialog', () => ({
+  EditTaskDialog: ({ task }: { task: { title: string } | null }) =>
+    task ? <div data-testid='edit-task-dialog-mock'>{task.title}</div> : null,
+}));
+jest.mock('@/app/(workspace)/tasks/_components/DeleteTaskDialog', () => ({
+  DeleteTaskDialog: ({ task }: { task: { title: string } | null }) =>
+    task ? <div data-testid='delete-task-dialog-mock'>{task.title}</div> : null,
 }));
 
 import { screen, waitFor } from '@testing-library/react';
@@ -206,6 +216,38 @@ describe('TasksPageClient', () => {
         '_blank',
         'noopener,noreferrer'
       );
+      // Assert: カレンダーボタンのクリックが行クリック（編集モーダル起動）に伝播しない
+      expect(screen.queryByTestId('edit-task-dialog-mock')).not.toBeInTheDocument();
+    });
+
+    it('行をクリックすると編集モーダルにそのタスクが渡される', async () => {
+      // Arrange
+      const user = userEvent.setup();
+      renderWithProviders(<TasksPageClient />);
+
+      // Act
+      await user.click(screen.getByText('タスク一覧確認タスク'));
+
+      // Assert
+      expect(screen.getByTestId('edit-task-dialog-mock')).toHaveTextContent(
+        'タスク一覧確認タスク'
+      );
+    });
+
+    it('削除アイコンクリックで編集モーダルは開かず、削除モーダルにそのタスクが渡される', async () => {
+      // Arrange
+      const user = userEvent.setup();
+      renderWithProviders(<TasksPageClient />);
+
+      // Act
+      await user.click(screen.getByRole('button', { name: 'タスクを削除' }));
+
+      // Assert
+      expect(screen.getByTestId('delete-task-dialog-mock')).toHaveTextContent(
+        'タスク一覧確認タスク'
+      );
+      // Assert: 削除アイコンのクリックが行クリック（編集モーダル起動）に伝播しない
+      expect(screen.queryByTestId('edit-task-dialog-mock')).not.toBeInTheDocument();
     });
 
     it('カレンダーリンク未設定タスクではカレンダーボタンがdisabledになる', () => {

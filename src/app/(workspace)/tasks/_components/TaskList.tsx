@@ -1,4 +1,5 @@
-import { CheckSquare, Calendar } from 'lucide-react';
+import { useState } from 'react';
+import { CheckSquare, Calendar, Trash2 } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -27,6 +28,8 @@ import { t } from '@/lib/locales/i18n';
 import { TaskFilter } from './TaskFilter';
 import { SortHeader } from './SortHeader';
 import { CreateTaskDialog } from './CreateTaskDialog';
+import { EditTaskDialog } from './EditTaskDialog';
+import { DeleteTaskDialog } from './DeleteTaskDialog';
 import { Pagination } from '@/components/molecules/Pagination';
 
 interface TaskListProps {
@@ -53,6 +56,8 @@ export function TaskList({
   pagination,
 }: TaskListProps) {
   const isSearching = isLoading;
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [deletingTask, setDeletingTask] = useState<Task | null>(null);
 
   return (
     <div className='rounded-lg border border-border bg-card shadow-sm overflow-hidden'>
@@ -141,7 +146,11 @@ export function TaskList({
               </TableRow>
             ) : (
               tasks.map((task) => (
-                <TableRow key={task.id}>
+                <TableRow
+                  key={task.id}
+                  onClick={() => setEditingTask(task)}
+                  className='cursor-pointer'
+                >
                   <TableCell>
                     <p
                       className='font-medium text-foreground text-xs sm:text-sm max-w-[150px] sm:max-w-[250px] truncate'
@@ -172,10 +181,13 @@ export function TaskList({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className='flex items-center justify-center'>
+                    <div className='flex items-center justify-center gap-1'>
                       {task.calendarLink ? (
                         <Button
-                          onClick={() => onCalendarClick(task)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCalendarClick(task);
+                          }}
                           variant='ghost'
                           size='icon'
                           className='h-7 w-7 text-muted-foreground hover:text-foreground'
@@ -194,6 +206,18 @@ export function TaskList({
                           <Calendar className='h-4 w-4' />
                         </Button>
                       )}
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletingTask(task);
+                        }}
+                        variant='ghost'
+                        size='icon'
+                        className='h-7 w-7 text-muted-foreground hover:text-destructive'
+                        aria-label='タスクを削除'
+                      >
+                        <Trash2 className='h-4 w-4' />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -213,6 +237,15 @@ export function TaskList({
           />
         </div>
       )}
+
+      <EditTaskDialog
+        task={editingTask}
+        onOpenChange={(open) => !open && setEditingTask(null)}
+      />
+      <DeleteTaskDialog
+        task={deletingTask}
+        onOpenChange={(open) => !open && setDeletingTask(null)}
+      />
     </div>
   );
 }

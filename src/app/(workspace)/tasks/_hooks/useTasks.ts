@@ -6,7 +6,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTasks, getTaskSummary, createTask } from '../actions';
+import { getTasks, getTaskSummary, createTask, updateTask, deleteTask } from '../actions';
 import { SortKey, SortOrder, GetTasksResponse, TaskSummaryResponse } from '../types';
 import { TaskFormInput } from '@/lib/schema/task.schema';
 
@@ -83,6 +83,38 @@ export const useCreateTaskMutation = () => {
 
   return useMutation({
     mutationFn: (input: TaskFormInput) => createTask(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['taskSummary'] });
+    },
+  });
+};
+
+/**
+ * タスク更新用カスタムフック
+ * 成功時にタスク一覧・タスク統計のキャッシュを無効化し、即時反映する
+ */
+export const useUpdateTaskMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: TaskFormInput }) => updateTask(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['taskSummary'] });
+    },
+  });
+};
+
+/**
+ * タスク削除用カスタムフック
+ * 成功時にタスク一覧・タスク統計のキャッシュを無効化し、即時反映する
+ */
+export const useDeleteTaskMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteTask(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['taskSummary'] });

@@ -11,10 +11,16 @@ jest.mock('@/app/(workspace)/tasks/_hooks/useTasks', () => ({
   useTasksQuery: jest.fn(),
   useTaskSummaryQuery: jest.fn(),
 }));
-// CreateTaskDialog は独自のミューテーション（next-auth 経由のServer Action）を持つため、
-// このテストの関心事（ダッシュボードのオーケストレーション）から切り離してスタブ化する
+// CreateTaskDialog/EditTaskDialog/DeleteTaskDialog は独自のミューテーション（next-auth 経由の
+// Server Action）を持つため、このテストの関心事（ダッシュボードのオーケストレーション）から切り離してスタブ化する
 jest.mock('@/app/(workspace)/tasks/_components/CreateTaskDialog', () => ({
   CreateTaskDialog: () => <div data-testid='create-task-dialog-mock' />,
+}));
+jest.mock('@/app/(workspace)/tasks/_components/EditTaskDialog', () => ({
+  EditTaskDialog: () => <div data-testid='edit-task-dialog-mock' />,
+}));
+jest.mock('@/app/(workspace)/tasks/_components/DeleteTaskDialog', () => ({
+  DeleteTaskDialog: () => <div data-testid='delete-task-dialog-mock' />,
 }));
 
 import { screen } from '@testing-library/react';

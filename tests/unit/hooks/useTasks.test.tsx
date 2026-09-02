@@ -9,17 +9,23 @@ import { renderHookWithProviders, createTestQueryClient } from '../../utils/rend
 jest.mock('@/app/(workspace)/tasks/actions', () => ({
   getTaskSummary: jest.fn(),
   createTask: jest.fn(),
+  updateTask: jest.fn(),
+  deleteTask: jest.fn(),
 }));
 
 import {
   useTaskSummaryQuery,
   useCreateTaskMutation,
+  useUpdateTaskMutation,
+  useDeleteTaskMutation,
 } from '@/app/(workspace)/tasks/_hooks/useTasks';
-import { getTaskSummary, createTask } from '@/app/(workspace)/tasks/actions';
+import { getTaskSummary, createTask, updateTask, deleteTask } from '@/app/(workspace)/tasks/actions';
 import { TASK_PRIORITY, TASK_STATUS } from '@/lib/constants/tasks';
 
 const mockGetTaskSummary = getTaskSummary as jest.MockedFunction<typeof getTaskSummary>;
 const mockCreateTask = createTask as jest.MockedFunction<typeof createTask>;
+const mockUpdateTask = updateTask as jest.MockedFunction<typeof updateTask>;
+const mockDeleteTask = deleteTask as jest.MockedFunction<typeof deleteTask>;
 
 describe('useTaskSummaryQuery', () => {
   beforeEach(() => {
@@ -98,6 +104,116 @@ describe('useCreateTaskMutation', () => {
 
     await act(async () => {
       await expect(result.current.mutateAsync(input)).rejects.toThrow('API error');
+    });
+
+    expect(invalidateQueriesSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('useUpdateTaskMutation', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const input = {
+    title: '更新後タスク',
+    description: null,
+    dueAt: null,
+    priority: TASK_PRIORITY.HIGH,
+    status: TASK_STATUS.IN_PROGRESS,
+  };
+
+  it('idと入力内容でupdateTaskが呼ばれ、成功時にidが返る', async () => {
+    mockUpdateTask.mockResolvedValue({ id: 'task-1' });
+    const queryClient = createTestQueryClient();
+
+    const { result } = renderHookWithProviders(() => useUpdateTaskMutation(), { queryClient });
+
+    let response: { id: string } | undefined;
+    await act(async () => {
+      response = await result.current.mutateAsync({ id: 'task-1', input });
+    });
+
+    expect(mockUpdateTask).toHaveBeenCalledWith('task-1', input);
+    expect(response).toEqual({ id: 'task-1' });
+  });
+
+  it('更新成功時にタスク一覧・タスク統計のキャッシュを無効化し、即時反映する', async () => {
+    mockUpdateTask.mockResolvedValue({ id: 'task-1' });
+    const queryClient = createTestQueryClient();
+    const invalidateQueriesSpy = jest.spyOn(queryClient, 'invalidateQueries');
+
+    const { result } = renderHookWithProviders(() => useUpdateTaskMutation(), { queryClient });
+
+    await act(async () => {
+      await result.current.mutateAsync({ id: 'task-1', input });
+    });
+
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['tasks'] });
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['taskSummary'] });
+  });
+
+  it('更新失敗時はキャッシュを無効化せずエラーを伝播する', async () => {
+    mockUpdateTask.mockRejectedValue(new Error('API error'));
+    const queryClient = createTestQueryClient();
+    const invalidateQueriesSpy = jest.spyOn(queryClient, 'invalidateQueries');
+
+    const { result } = renderHookWithProviders(() => useUpdateTaskMutation(), { queryClient });
+
+    await act(async () => {
+      await expect(result.current.mutateAsync({ id: 'task-1', input })).rejects.toThrow(
+        'API error'
+      );
+    });
+
+    expect(invalidateQueriesSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('useDeleteTaskMutation', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('idでdeleteTaskが呼ばれ、成功時にidが返る', async () => {
+    mockDeleteTask.mockResolvedValue({ id: 'task-1' });
+    const queryClient = createTestQueryClient();
+
+    const { result } = renderHookWithProviders(() => useDeleteTaskMutation(), { queryClient });
+
+    let response: { id: string } | undefined;
+    await act(async () => {
+      response = await result.current.mutateAsync('task-1');
+    });
+
+    expect(mockDeleteTask).toHaveBeenCalledWith('task-1');
+    expect(response).toEqual({ id: 'task-1' });
+  });
+
+  it('削除成功時にタスク一覧・タスク統計のキャッシュを無効化し、即時反映する', async () => {
+    mockDeleteTask.mockResolvedValue({ id: 'task-1' });
+    const queryClient = createTestQueryClient();
+    const invalidateQueriesSpy = jest.spyOn(queryClient, 'invalidateQueries');
+
+    const { result } = renderHookWithProviders(() => useDeleteTaskMutation(), { queryClient });
+
+    await act(async () => {
+      await result.current.mutateAsync('task-1');
+    });
+
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['tasks'] });
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['taskSummary'] });
+  });
+
+  it('削除失敗時はキャッシュを無効化せずエラーを伝播する', async () => {
+    mockDeleteTask.mockRejectedValue(new Error('API error'));
+    const queryClient = createTestQueryClient();
+    const invalidateQueriesSpy = jest.spyOn(queryClient, 'invalidateQueries');
+
+    const { result } = renderHookWithProviders(() => useDeleteTaskMutation(), { queryClient });
+
+    await act(async () => {
+      await expect(result.current.mutateAsync('task-1')).rejects.toThrow('API error');
     });
 
     expect(invalidateQueriesSpy).not.toHaveBeenCalled();
