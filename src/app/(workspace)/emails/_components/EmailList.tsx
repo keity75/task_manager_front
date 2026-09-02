@@ -17,8 +17,8 @@ interface EmailListProps {
   filters: EmailFilterValues;
   filterHandlers: EmailFilterHandlers;
   pagination: EmailPaginationProps;
-  selectedEmail: Email | null;
-  onSelectEmail: (email: Email | null) => void;
+  selectedEmailId: string | null;
+  onSelectEmail: (id: string | null) => void;
   onRefreshClick: () => void;
 }
 
@@ -31,7 +31,7 @@ export function EmailList({
   filters,
   filterHandlers,
   pagination,
-  selectedEmail,
+  selectedEmailId,
   onSelectEmail,
   onRefreshClick,
 }: EmailListProps) {
@@ -109,7 +109,7 @@ export function EmailList({
               emails.map((email) => (
                 <TableRow
                   key={email.id}
-                  onClick={() => onSelectEmail(email)}
+                  onClick={() => onSelectEmail(email.id)}
                   className='cursor-pointer'
                 >
                   <TableCell>
@@ -152,7 +152,7 @@ export function EmailList({
       )}
 
       <EmailDetailModal
-        email={selectedEmail}
+        emailId={selectedEmailId}
         onOpenChange={(open) => !open && onSelectEmail(null)}
       />
     </div>

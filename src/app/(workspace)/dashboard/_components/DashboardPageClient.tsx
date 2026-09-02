@@ -5,6 +5,7 @@ import { DashboardStats } from './DashboardStats';
 import { RecentEmails } from './RecentEmails';
 import { UpcomingTasks } from './UpcomingTasks';
 import { useTaskSummaryQuery, useTasksQuery } from '../../tasks/_hooks/useTasks';
+import { useEmailsQuery } from '../../emails/_hooks/useEmails';
 import { SortKey, SortOrder, Task } from '../../tasks/types';
 import { TASK_STATUS } from '@/lib/constants/tasks';
 import { t } from '@/lib/locales/i18n';
@@ -13,6 +14,9 @@ const DASHBOARD_TASK_LIMIT = 20;
 const DASHBOARD_TASK_PAGE = 1;
 const DASHBOARD_TASK_SORT_KEY: SortKey = 'priority';
 const DASHBOARD_TASK_SORT_ORDER: SortOrder = 'desc';
+
+const DASHBOARD_EMAIL_LIMIT = 5;
+const DASHBOARD_EMAIL_PAGE = 1;
 
 export function DashboardPageClient() {
   // --- データ取得 (Queries) ---
@@ -25,12 +29,17 @@ export function DashboardPageClient() {
   });
   // タスク集計取得
   const { summary, isLoading: summaryLoading } = useTaskSummaryQuery();
+  // 最新メール取得（受信日時降順で先頭N件）
+  const { emails, isLoading: emailsLoading } = useEmailsQuery({
+    page: DASHBOARD_EMAIL_PAGE,
+    limit: DASHBOARD_EMAIL_LIMIT,
+  });
   const handleCalendarClick = useCallback((task: Task) => {
     if (!task.calendarLink) return;
     window.open(task.calendarLink, '_blank', 'noopener,noreferrer');
   }, []);
 
-  if (summaryLoading || tasksLoading) {
+  if (summaryLoading || tasksLoading || emailsLoading) {
     return (
       <div className='mx-auto max-w-7xl px-4 py-6 sm:py-8 sm:px-6 lg:px-8'>
         <div className='flex items-center justify-center min-h-[400px]'>
@@ -45,7 +54,7 @@ export function DashboardPageClient() {
       <DashboardStats summary={summary} />
 
       <div className='grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start'>
-        <RecentEmails />
+        <RecentEmails emails={emails} />
         <UpcomingTasks tasks={tasks} onCalendarClick={handleCalendarClick} />
       </div>
     </div>

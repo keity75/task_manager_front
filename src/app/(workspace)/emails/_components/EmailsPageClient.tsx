@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { useEmailsQuery } from '../_hooks/useEmails';
-import { Email, EmailFilterValues, EmailFilterHandlers, EmailPaginationProps } from '../types';
+import { EmailFilterValues, EmailFilterHandlers, EmailPaginationProps } from '../types';
 import { EmailList } from './EmailList';
 
 const EMAILS_FETCH_LIMIT = 10;
@@ -20,7 +20,7 @@ export function EmailsPageClient() {
   // API検索実行用のstate（useEmailsQueryに渡す）
   const [apiFilters, setApiFilters] = useState<EmailFilterValues>(initialFilterState);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
+  const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
 
   // react-hook-form のセットアップ
   const { handleSubmit, reset, watch, setValue } = useForm<EmailFilterValues>({
@@ -96,8 +96,8 @@ export function EmailsPageClient() {
       filters={filterValues}
       filterHandlers={filterHandlers}
       pagination={paginationProps}
-      selectedEmail={selectedEmail}
-      onSelectEmail={setSelectedEmail}
+      selectedEmailId={selectedEmailId}
+      onSelectEmail={setSelectedEmailId}
       onRefreshClick={handleRefreshClick}
     />
   );

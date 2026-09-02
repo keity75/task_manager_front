@@ -11,8 +11,12 @@ jest.mock('@/app/(workspace)/tasks/_hooks/useTasks', () => ({
   useTasksQuery: jest.fn(),
   useTaskSummaryQuery: jest.fn(),
 }));
-// CreateTaskDialog/EditTaskDialog/DeleteTaskDialog は独自のミューテーション（next-auth 経由の
-// Server Action）を持つため、このテストの関心事（ダッシュボードのオーケストレーション）から切り離してスタブ化する
+jest.mock('@/app/(workspace)/emails/_hooks/useEmails', () => ({
+  useEmailsQuery: jest.fn(),
+}));
+// CreateTaskDialog/EditTaskDialog/DeleteTaskDialog/EmailDetailModal は独自のデータ取得・ミューテーション
+// （next-auth 経由の Server Action）を持つため、このテストの関心事（ダッシュボードのオーケストレーション）
+// から切り離してスタブ化する
 jest.mock('@/app/(workspace)/tasks/_components/CreateTaskDialog', () => ({
   CreateTaskDialog: () => <div data-testid='create-task-dialog-mock' />,
 }));
@@ -22,20 +26,38 @@ jest.mock('@/app/(workspace)/tasks/_components/EditTaskDialog', () => ({
 jest.mock('@/app/(workspace)/tasks/_components/DeleteTaskDialog', () => ({
   DeleteTaskDialog: () => <div data-testid='delete-task-dialog-mock' />,
 }));
+jest.mock('@/app/(workspace)/emails/_components/EmailDetailModal', () => ({
+  EmailDetailModal: ({ emailId }: { emailId: string | null }) =>
+    emailId ? <div data-testid='email-detail-modal-mock'>{emailId}</div> : null,
+}));
 
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
 import { renderWithProviders } from '../../../utils/render';
 import { buildMockTask } from '../../../utils/builders';
 import { DashboardPageClient } from '@/app/(workspace)/dashboard/_components/DashboardPageClient';
 import { useTasksQuery, useTaskSummaryQuery } from '@/app/(workspace)/tasks/_hooks/useTasks';
+import { useEmailsQuery } from '@/app/(workspace)/emails/_hooks/useEmails';
 import { TASK_STATUS, TASK_PRIORITY } from '@/lib/constants/tasks';
+import type { Email } from '@/app/(workspace)/emails/types';
 
 // モック型キャスト
 const mockUseTasksQuery = useTasksQuery as jest.MockedFunction<typeof useTasksQuery>;
 const mockUseTaskSummaryQuery = useTaskSummaryQuery as jest.MockedFunction<
   typeof useTaskSummaryQuery
 >;
+const mockUseEmailsQuery = useEmailsQuery as jest.MockedFunction<typeof useEmailsQuery>;
+
+function buildMockEmail(overrides?: Partial<Email>): Email {
+  return {
+    id: 'email-1',
+    subject: 'ダッシュボード メール1',
+    from: 'tanaka@example.com',
+    receivedAt: '2026-03-10T01:20:00Z',
+    ...overrides,
+  };
+}
 
 // デフォルトのhooks戻り値を設定するヘルパー
 // DashboardPageClient は多数の hooks を使用するため、全てのデフォルト戻り値を一箇所で管理する
@@ -43,6 +65,8 @@ function setupDefaultMocks(
   overrides: {
     tasks?: ReturnType<typeof buildMockTask>[];
     summary?: { total: number; todo: number; inProgress: number; done: number } | undefined;
+    emails?: Email[];
+    emailsLoading?: boolean;
   } = {}
 ) {
   const tasks = overrides.tasks ?? [
@@ -57,6 +81,7 @@ function setupDefaultMocks(
     overrides.summary !== undefined
       ? overrides.summary
       : { total: 5, todo: 2, inProgress: 2, done: 1 };
+  const emails = overrides.emails ?? [buildMockEmail()];
 
   mockUseTasksQuery.mockReturnValue({
     tasks,
@@ -71,6 +96,16 @@ function setupDefaultMocks(
     isLoading: false,
     isError: false,
     error: null,
+  });
+
+  mockUseEmailsQuery.mockReturnValue({
+    emails,
+    totalCount: emails.length,
+    isLoading: overrides.emailsLoading ?? false,
+    isFetching: overrides.emailsLoading ?? false,
+    isError: false,
+    error: null,
+    refetch: jest.fn(),
   });
 }
 
@@ -126,6 +161,20 @@ describe('DashboardPageClient', () => {
 
       // Assert
       expect(screen.getByRole('heading', { name: '最新メール一覧' })).toBeInTheDocument();
+      expect(screen.getByText('ダッシュボード メール1')).toBeInTheDocument();
+    });
+
+    it('メールをクリックすると詳細モーダルが開く', async () => {
+      // Arrange
+      const user = userEvent.setup();
+      renderWithProviders(<DashboardPageClient />);
+      expect(screen.queryByTestId('email-detail-modal-mock')).not.toBeInTheDocument();
+
+      // Act
+      await user.click(screen.getByText('ダッシュボード メール1'));
+
+      // Assert
+      expect(screen.getByTestId('email-detail-modal-mock')).toBeInTheDocument();
     });
 
     it('直近のタスク一覧が表示される', () => {

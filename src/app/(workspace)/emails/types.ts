@@ -3,7 +3,10 @@ export interface Email {
   subject: string;
   from: string;
   receivedAt: string; // UTC ISO 8601
-  body: string;
+}
+
+export interface EmailDetail extends Email {
+  body: string; // プレーンテキスト（改行は\n）
 }
 
 export interface GetEmailsResponse {

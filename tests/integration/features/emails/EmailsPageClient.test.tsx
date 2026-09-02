@@ -2,14 +2,15 @@
  * @file EmailsPageClient.test.tsx
  * EmailsPageClient コンポーネントの統合テスト
  *
- * メール管理ページのオーケストレーター。useEmailsQuery フックをモックし、
- * 一覧表示・フィルター・ページネーション・更新ボタン・詳細モーダル・
+ * メール管理ページのオーケストレーター。useEmailsQuery/useEmailQuery フックをモックし、
+ * 一覧表示・フィルター・ページネーション・更新ボタン・詳細モーダル（本文の別取得含む）・
  * ローディング/エラー/空状態を検証する。
  */
 
 // ★ jest.mock は import より先に記述（Jest hoisting）
 jest.mock('@/app/(workspace)/emails/_hooks/useEmails', () => ({
   useEmailsQuery: jest.fn(),
+  useEmailQuery: jest.fn(),
 }));
 
 import { screen, waitFor, within } from '@testing-library/react';
@@ -17,11 +18,12 @@ import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
 import { renderWithProviders } from '../../../utils/render';
 import { EmailsPageClient } from '@/app/(workspace)/emails/_components/EmailsPageClient';
-import { useEmailsQuery } from '@/app/(workspace)/emails/_hooks/useEmails';
-import type { Email } from '@/app/(workspace)/emails/types';
+import { useEmailsQuery, useEmailQuery } from '@/app/(workspace)/emails/_hooks/useEmails';
+import type { Email, EmailDetail } from '@/app/(workspace)/emails/types';
 
 // モック型キャスト
 const mockUseEmailsQuery = useEmailsQuery as jest.MockedFunction<typeof useEmailsQuery>;
+const mockUseEmailQuery = useEmailQuery as jest.MockedFunction<typeof useEmailQuery>;
 
 function buildMockEmail(overrides?: Partial<Email>): Email {
   return {
@@ -29,12 +31,19 @@ function buildMockEmail(overrides?: Partial<Email>): Email {
     subject: '来週の打ち合わせ日程について',
     from: 'tanaka@example.com',
     receivedAt: '2026-03-10T01:20:00Z',
+    ...overrides,
+  };
+}
+
+function buildMockEmailDetail(overrides?: Partial<EmailDetail>): EmailDetail {
+  return {
+    ...buildMockEmail(),
     body: '来週の打ち合わせについてご連絡いたします。\nよろしくお願いいたします。',
     ...overrides,
   };
 }
 
-// デフォルトのhooks戻り値を設定するヘルパー
+// デフォルトの一覧hooks戻り値を設定するヘルパー
 function setupDefaultMocks(
   overrides: {
     emails?: Email[];
@@ -58,6 +67,22 @@ function setupDefaultMocks(
   });
 }
 
+// デフォルトの詳細hooks戻り値を設定するヘルパー（詳細モーダル用）
+function setupDetailMock(
+  overrides: {
+    email?: EmailDetail;
+    isLoading?: boolean;
+    isError?: boolean;
+  } = {}
+) {
+  mockUseEmailQuery.mockReturnValue({
+    email: 'email' in overrides ? overrides.email : buildMockEmailDetail(),
+    isLoading: overrides.isLoading ?? false,
+    isError: overrides.isError ?? false,
+    error: null,
+  });
+}
+
 // 直近のuseEmailsQuery呼び出し引数を取得するヘルパー
 function getLastQueryArgs() {
   return mockUseEmailsQuery.mock.calls.at(-1)?.[0];
@@ -68,6 +93,7 @@ describe('EmailsPageClient', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setupDefaultMocks();
+    setupDetailMock();
   });
 
   // ─── 正常系 ─────────────────────────────────────────
@@ -190,7 +216,21 @@ describe('EmailsPageClient', () => {
       expect(screen.getByRole('button', { name: '更新中...' })).toBeDisabled();
     });
 
-    it('行をクリックすると詳細モーダルに件名・送信者・受信日時・本文が表示される', async () => {
+    it('行をクリックするとクリックしたメールのidで詳細が取得される', async () => {
+      // Arrange
+      const user = userEvent.setup();
+      renderWithProviders(<EmailsPageClient />);
+
+      // Act
+      await user.click(screen.getByText('来週の打ち合わせ日程について'));
+
+      // Assert
+      await waitFor(() => {
+        expect(mockUseEmailQuery).toHaveBeenLastCalledWith('email-1');
+      });
+    });
+
+    it('詳細取得成功時、モーダルに件名・送信者・受信日時・本文が表示される', async () => {
       // Arrange
       const user = userEvent.setup();
       renderWithProviders(<EmailsPageClient />);
@@ -287,6 +327,36 @@ describe('EmailsPageClient', () => {
 
       // Assert: t.ui.no_items(t.email.name)
       expect(screen.getByText('メールがありません')).toBeInTheDocument();
+    });
+
+    it('詳細取得中はモーダル内にローディング表示になる', async () => {
+      // Arrange
+      const user = userEvent.setup();
+      setupDetailMock({ email: undefined, isLoading: true });
+      renderWithProviders(<EmailsPageClient />);
+
+      // Act
+      await user.click(screen.getByText('来週の打ち合わせ日程について'));
+
+      // Assert: モーダル自体は開くが、本文取得中はローディング表示
+      const dialog = screen.getByRole('dialog');
+      expect(within(dialog).getByText('読み込み中...')).toBeInTheDocument();
+    });
+
+    it('詳細取得に失敗した場合、モーダル内にエラーメッセージが表示される', async () => {
+      // Arrange
+      const user = userEvent.setup();
+      setupDetailMock({ email: undefined, isError: true });
+      renderWithProviders(<EmailsPageClient />);
+
+      // Act
+      await user.click(screen.getByText('来週の打ち合わせ日程について'));
+
+      // Assert
+      const dialog = screen.getByRole('dialog');
+      expect(
+        within(dialog).getByText('エラーが発生しました。メールの読み込みに失敗しました。')
+      ).toBeInTheDocument();
     });
   });
 

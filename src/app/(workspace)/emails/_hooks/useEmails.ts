@@ -6,8 +6,8 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { getEmails } from '../actions';
-import { GetEmailsResponse } from '../types';
+import { getEmails, getEmail } from '../actions';
+import { GetEmailsResponse, EmailDetail } from '../types';
 
 /**
  * メール一覧を取得するカスタムフック
@@ -48,5 +48,24 @@ export const useEmailsQuery = ({
     isError: !!error,
     error,
     refetch,
+  };
+};
+
+/**
+ * メール詳細（本文含む）を取得するカスタムフック
+ * 一覧レスポンスにはbodyが含まれないため、詳細モーダルを開いたタイミングで別途取得する
+ */
+export const useEmailQuery = (id: string | null) => {
+  const { data, isLoading, error } = useQuery<EmailDetail>({
+    queryKey: ['emails', 'detail', id],
+    queryFn: () => getEmail(id as string),
+    enabled: id !== null,
+  });
+
+  return {
+    email: data,
+    isLoading,
+    isError: !!error,
+    error,
   };
 };

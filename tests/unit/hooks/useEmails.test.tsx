@@ -8,18 +8,24 @@ import { renderHookWithProviders, createTestQueryClient } from '../../utils/rend
 
 jest.mock('@/app/(workspace)/emails/actions', () => ({
   getEmails: jest.fn(),
+  getEmail: jest.fn(),
 }));
 
-import { useEmailsQuery } from '@/app/(workspace)/emails/_hooks/useEmails';
-import { getEmails } from '@/app/(workspace)/emails/actions';
+import { useEmailsQuery, useEmailQuery } from '@/app/(workspace)/emails/_hooks/useEmails';
+import { getEmails, getEmail } from '@/app/(workspace)/emails/actions';
 
 const mockGetEmails = getEmails as jest.MockedFunction<typeof getEmails>;
+const mockGetEmail = getEmail as jest.MockedFunction<typeof getEmail>;
 
 const mockEmail = {
   id: 'email-1',
   subject: 'テストメール',
   from: 'tanaka@example.com',
   receivedAt: '2026-03-10T01:20:00Z',
+};
+
+const mockEmailDetail = {
+  ...mockEmail,
   body: '本文です。',
 };
 
@@ -34,9 +40,7 @@ describe('useEmailsQuery', () => {
       mockGetEmails.mockResolvedValue({ emails: [mockEmail], totalCount: 1 });
 
       // Act
-      const { result } = renderHookWithProviders(() =>
-        useEmailsQuery({ page: 1, limit: 10 })
-      );
+      const { result } = renderHookWithProviders(() => useEmailsQuery({ page: 1, limit: 10 }));
 
       // Assert
       await waitFor(() => {
@@ -134,6 +138,58 @@ describe('useEmailsQuery', () => {
       });
       expect(result.current.emails).toEqual([]);
       expect(result.current.totalCount).toBe(0);
+    });
+  });
+});
+
+describe('useEmailQuery', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('正常系', () => {
+    it('idを指定するとgetEmailが呼ばれ、本文を含む詳細が返る', async () => {
+      // Arrange
+      mockGetEmail.mockResolvedValue(mockEmailDetail);
+
+      // Act
+      const { result } = renderHookWithProviders(() => useEmailQuery('email-1'));
+
+      // Assert
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+      expect(mockGetEmail).toHaveBeenCalledWith('email-1');
+      expect(result.current.email).toEqual(mockEmailDetail);
+      expect(result.current.isError).toBe(false);
+    });
+  });
+
+  describe('異常系', () => {
+    it('idがnullの場合はgetEmailを呼ばない', () => {
+      // Act
+      const { result } = renderHookWithProviders(() => useEmailQuery(null));
+
+      // Assert
+      expect(mockGetEmail).not.toHaveBeenCalled();
+      expect(result.current.email).toBeUndefined();
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    it('API失敗時にisErrorがtrueになる', async () => {
+      // Arrange
+      mockGetEmail.mockRejectedValue(new Error('API error'));
+      const queryClient = createTestQueryClient();
+      queryClient.setDefaultOptions({ queries: { retry: false } });
+
+      // Act
+      const { result } = renderHookWithProviders(() => useEmailQuery('email-1'), { queryClient });
+
+      // Assert
+      await waitFor(() => {
+        expect(result.current.isError).toBe(true);
+      });
+      expect(result.current.email).toBeUndefined();
     });
   });
 });
